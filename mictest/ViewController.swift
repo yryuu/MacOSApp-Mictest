@@ -17,8 +17,14 @@ let recognizer = SFSpeechRecognizer(locale: Locale.init(identifier: "ja_JP"))!
 
 class ViewController: NSViewController {
 
+    @IBOutlet var speakButton: NSButton!
+    @IBOutlet var stopButton: NSButton!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        speakButton.isEnabled = true
+        stopButton.isEnabled = false
 
     }
     
@@ -26,26 +32,36 @@ class ViewController: NSViewController {
         SFSpeechRecognizer.requestAuthorization { (authStatus) in
           DispatchQueue.main.async {
             if authStatus != SFSpeechRecognizerAuthorizationStatus.authorized {
-                print("test2")
-                
-            }
-            else {
-                print("test1")
-                try! self.start()
             }
           }
         }
         
     }
-
+    
+    
+    @IBAction func speak(_ sender: Any) {
+        speakButton.isEnabled = false
+        stopButton.isEnabled = true
+        try! startVoice()
+    }
+    
+    
+    @IBAction func stop(_ sender: Any) {
+        speakButton.isEnabled = true
+        stopButton.isEnabled = false
+        
+        audioEngine.stop()
+        audioEngine.inputNode.removeTap(onBus: 0)
+        recognitionReq.endAudio()
+    }
+    
     override var representedObject: Any? {
         didSet {
         // Update the view, if already loaded.
         }
     }
     
-    func start() throws {
-        let audioEngine = AVAudioEngine()
+    func startVoice() throws {
         let inputNode = audioEngine.inputNode
         
         recognitionReq.shouldReportPartialResults = true
@@ -53,7 +69,6 @@ class ViewController: NSViewController {
         // マイク入力の設定
         let recordingFormat = inputNode.outputFormat(forBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 2048, format: recordingFormat) { (buffer, time) in
-            print(buffer)
           recognitionReq.append(buffer)
         }
         audioEngine.prepare()
@@ -69,12 +84,6 @@ class ViewController: NSViewController {
             }
           }
         })
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-            audioEngine.stop()
-            audioEngine.inputNode.removeTap(onBus: 0)
-            recognitionReq.endAudio()
-        }
         
     }
 
